@@ -1,0 +1,128 @@
+#include <sqlite3.h>
+#include <stdio.h>
+#include <iostream>
+
+using namespace std;
+//ALL FUNCTIONS USED BELOW HAVE ERROR FUNCTION OUTPUTS ON CONSOLE JUST IN CASE.
+static int createDB(const char* s);
+static int createTable(const char* s);
+static int insertData(const char* s);
+static int selectData1(const char* s);
+static int selectData2(const char* s);
+static int callback(void* NotUsed, int argc, char** argv, char** azColName);
+
+int main()
+{
+	//DATABASE CREATED/accessed locally if not found
+	const char* dir = R"(c:\\SQL\\Classicmovies.db)";
+
+	createDB(dir);
+	createTable(dir);
+	insertData(dir);
+	cout << "Selecting data from all rows" << endl;
+	selectData1(dir);
+	cout << "Selecting movies for parameter ACTOR" << endl;
+	selectData2(dir);
+
+	return 0;
+}
+
+static int createDB(const char* s)
+{
+	sqlite3* DB;
+	int exit = 0;
+	exit = sqlite3_open(s, &DB);
+	sqlite3_close(DB);
+	return 0;
+}
+static int createTable(const char* s)
+{
+	sqlite3* DB;
+	char* messageError;
+	string sql = "CREATE TABLE IF NOT EXISTS Movies("
+		"MOVIE_NAME CHAR(50), "
+		"ACTOR      CHAR(50), "
+		"ACTRESS    CHAR(50), "
+		"DIRECTOR   CHAR(50), "
+		"RELEASED   INT NOT NULL);";
+	try
+	{
+		int exit = 0;
+		exit = sqlite3_open(s, &DB);
+
+		exit = sqlite3_exec(DB, sql.c_str(), NULL, 0, &messageError);
+		if (exit != SQLITE_OK) {
+			cerr << "Error in createTable function." << endl;
+			sqlite3_free(messageError);
+		}else
+			cout << "Table created Successfully" << endl;
+		sqlite3_close(DB);
+	}
+	catch (const exception& e)
+	{
+		cerr << e.what();
+	}
+	return 0;
+}
+
+static int insertData(const char* s)
+{
+	sqlite3* DB;
+	char* messageError;
+	string sql("INSERT INTO Movies (MOVIE_NAME, ACTOR, ACTRESS, DIRECTOR, RELEASED) VALUES('Pulp Fiction', 'John Travolta','Uma Thurman', 'Quentin Tarantino',1994);"
+		"INSERT INTO Movies (MOVIE_NAME, ACTOR, ACTRESS, DIRECTOR, RELEASED) VALUES('Fight Club', 'Brad Pitt', 'Helena Carter', 'David Fincher', 1999 );"
+		"INSERT INTO Movies (MOVIE_NAME, ACTOR, ACTRESS, DIRECTOR, RELEASED) VALUES('Mr and Mrs Smith', 'Brad Pitt', 'Angelina Jolie', 'Doug Liman', 2005 );"
+		"INSERT INTO Movies (MOVIE_NAME, ACTOR, ACTRESS, DIRECTOR, RELEASED) VALUES('World War Z', 'Brad Pitt', 'Mirelle Enos', 'Mark Forster', 2013 );"
+		"INSERT INTO Movies (MOVIE_NAME, ACTOR, ACTRESS, DIRECTOR, RELEASED) VALUES('Forrest Gump', 'Tom Hanks', 'Robin Wright', 'Robert Zemeckis',1994);");
+
+	int exit = sqlite3_open(s, &DB);
+	exit = sqlite3_exec(DB, sql.c_str(), NULL, 0, &messageError);
+	if (exit != SQLITE_OK) {
+		cerr << "Error in insertData function." << endl;
+		sqlite3_free(messageError);
+	}else
+		cout << "Records inserted Successfully!" << endl;
+	return 0;
+}
+
+
+static int selectData1(const char* s)
+{
+	sqlite3* DB;
+	char* messageError;
+	string sql1 = "SELECT * FROM Movies;";
+	int exit = sqlite3_open(s, &DB);
+	exit = sqlite3_exec(DB, sql1.c_str(), callback, NULL, &messageError);
+	if (exit != SQLITE_OK) {
+		cerr << "Error in selectData function." << endl;
+		sqlite3_free(messageError);
+	}else
+		cout << "Records selected Successfully!" << endl;
+	return 0;
+}
+static int selectData2(const char* s)
+{
+	sqlite3* DB;
+	char* messageError;
+	string sql2 = "SELECT * FROM Movies WHERE ACTOR = 'Brad Pitt';";
+	int exit = sqlite3_open(s, &DB);
+	exit = sqlite3_exec(DB, sql2.c_str(), callback, NULL, &messageError);
+	if (exit != SQLITE_OK) {
+		cerr << "Error in selectData function." << endl;
+		sqlite3_free(messageError);
+	}
+	else
+		cout << "Records selected Successfully!" << endl;
+	return 0;
+}
+
+//callback function is to be used by SQLite to retrieve all the selected data
+static int callback(void* NotUsed, int argc, char** argv, char** azColName)
+{
+	for (int i = 0; i < argc; i++) {
+		// column name and value
+		cout << azColName[i] << ": " << argv[i] << endl;
+	}
+	cout << endl;
+	return 0;
+}
